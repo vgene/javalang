@@ -37,7 +37,7 @@ public final class ModelRegistryEditorPlugin extends EMFPlugin
          * <!-- end-user-doc -->
          * @generated
          */
-        public static final ModelRegistryEditorPlugin INSTANCE = new ModelRegistryEditorPlugin(), IT2 = new ModelRegistryEditorPlugin();
+        public static final ModelRegistryEditorPlugin INSTANCE = new ModelRegistryEditorPlugin(2,3){}, IT2 = new ModelRegistryEditorPlugin(), IT3 = new int[2];
 
         /**
          * Keep track of the singleton.
