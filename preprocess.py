@@ -10,7 +10,8 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 print(javalang.__path__)
 
-
+def render_ast_innate(ast):
+    return ast.to_java()
 
 def print_ast(ast):
     """ Print the ast in order to debug"""
@@ -115,6 +116,17 @@ def print_ast(ast):
             stack.extend(['}', body, '{'])
             continue
 
+        if isinstance(node, javalang.tree.ConstructorDeclaration):
+            modifiers_str = get_modifiers_str(node)
+            name_str = getattr(node, 'name')
+            parameters_str = get_parameter_str(node) 
+            body = getattr(node, "body")
+
+            print(modifiers_str, name_str,'('+parameters_str+')')
+
+            stack.extend(['}', body, '{'])
+            continue
+
         if isinstance(node, javalang.tree.FieldDeclaration):
             modifiers_str = get_modifiers_str(node)
             # TODO: Deal more with type
@@ -123,7 +135,7 @@ def print_ast(ast):
             modifiers_str = get_modifiers_str(node)
 
             print(modifiers_str, type_str, declarators_str_list+';')
-
+            continue
 
         if isinstance(node, javalang.tree.FormalParameter):
             modifiers_str = get_modifiers_str(node)
@@ -168,4 +180,5 @@ if __name__ == "__main__":
 
     ast = javalang.parse.parse(program)
 
-    print_ast(ast)
+    result = render_ast_innate(ast) 
+    print(result)

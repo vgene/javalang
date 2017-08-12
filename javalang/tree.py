@@ -1,19 +1,45 @@
-
 from .ast import Node
 
 # ------------------------------------------------------------------------------
+SEPERATOR = "\r\n"
 
 class CompilationUnit(Node):
     attrs = ("package", "imports", "types")
+    
+    def to_java(self):
+        package_str = self.package.to_java()
+        imports = SEPERATOR.join([i.to_java() for i in self.imports])
+        types = SEPERATOR.join([i.to_java() for i in self.types])
+        value = package_str + SEPERATOR*2 + imports + SEPERATOR*2 + types
+
+        return value
 
 class Import(Node):
     attrs = ("path", "static", "wildcard")
+
+    def to_java(self):
+        value = 'import '
+        if self.static:
+            value = value + 'static '
+        value = value + self.path
+        if self.wildcard:
+            value = value + '.*'
+        value = value + ';'
+        return value
 
 class Documented(Node):
     attrs = ("documentation",)
 
 class Declaration(Node):
     attrs = ("modifiers", "annotations")
+    
+    # TODO: consider order or the modifiers
+    @property
+    def modifiers_str(self):
+        if self.modifiers:
+            return " ".join(self.modifiers)+" "
+        else:
+            return ""
 
 class TypeDeclaration(Declaration, Documented):
     attrs = ("name", "body")
@@ -33,8 +59,34 @@ class TypeDeclaration(Declaration, Documented):
 class PackageDeclaration(Declaration, Documented):
     attrs = ("name",)
 
+    def to_java(self):
+        name = self.name
+        value = self.modifiers_str + 'package '+ name +';'
+        return value
+
 class ClassDeclaration(TypeDeclaration):
     attrs = ("type_parameters", "extends", "implements")
+
+    def to_java(self):
+        name = self.name 
+        extends = self.extends
+        implements = self.implements 
+        # TODO:Implement this
+        type_parameters = self.type_parameters
+        body = [node.to_java() for node in self.body]
+        
+        adding_ext = ""
+        if extends:
+            adding_ext = " extends "+ extends.to_java()
+
+        adding_imp = ""
+        if implements:
+            adding_imp = " implements " + ", ".join([t.to_java() for t in implements])
+
+        value = self.modifiers_str + "class " +name+adding_ext+adding_imp
+        
+        value += "{"+SEPERATOR+SEPERATOR.join(body)+SEPERATOR+"}"
+        return value
 
 class EnumDeclaration(TypeDeclaration):
     attrs = ("implements",)
@@ -50,11 +102,28 @@ class AnnotationDeclaration(TypeDeclaration):
 class Type(Node):
     attrs = ("name", "dimensions",)
 
+    @property
+    def name_with_dimensions_str(self):
+        return self.name+"[]"*len(self.dimensions)
+
+    def to_java(self):
+        return self.name_with_dimensions_str
+
 class BasicType(Type):
     attrs = ()
 
+    def to_java(self):
+        return self.name_with_dimensions_str
+
 class ReferenceType(Type):
     attrs = ("arguments", "sub_type")
+
+    def to_java(self):
+        #TODO: Implement this
+        arguments = self.arguments
+        sub_type = self.sub_type
+
+        return self.name_with_dimensions_str 
 
 class TypeArgument(Node):
     attrs = ("type", "pattern_type")
@@ -83,6 +152,34 @@ class Member(Documented):
 class MethodDeclaration(Member, Declaration):
     attrs = ("type_parameters", "return_type", "name", "parameters", "throws", "body")
 
+    @property
+    def parameters_str(self):
+        if self.parameters:
+            paras = []
+            for para in self.parameters:
+                paras.append(para.to_java())
+
+            return ", ".join(paras)
+        else:
+            return ""
+
+    def to_java(self):
+        name_str = self.name
+        parameters_str = self.parameters_str
+        modifiers_str = self.modifiers_str
+        return_type_str = self.return_type.to_java()
+
+        body = [node.to_java() for node in self.body]
+
+        # TODO: Implement these
+        type_parameters = self.type_parameters
+        throws = self.throws
+
+        value = modifiers_str+return_type_str+" "+name_str+"("+parameters_str+")"
+
+        value += SEPERATOR + "{" + SEPERATOR + SEPERATOR.join(body) + SEPERATOR+"}"
+        return value
+
 class FieldDeclaration(Member, Declaration):
     attrs = ("type", "declarators")
 
@@ -108,6 +205,11 @@ class VariableDeclarator(Node):
 
 class FormalParameter(Declaration):
     attrs = ("type", "name", "varargs")
+    
+    def to_java(self):
+        type_str = self.type.to_java()
+        value = self.modifiers_str+type_str+' '+self.name
+        return value
 
 class InferredFormalParameter(Node):
     attrs = ('name',)
@@ -269,4 +371,3 @@ class EnumConstantDeclaration(Declaration, Documented):
 
 class AnnotationMethod(Declaration):
     attrs = ("name", "return_type", "dimensions", "default")
-

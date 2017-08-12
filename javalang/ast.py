@@ -61,6 +61,9 @@ class Node(object):
     def position(self):
         if hasattr(self, "_position"):
             return self._position
+    
+    def to_java(self):
+        return ""
 
 def walk_tree(root):
     children = None
