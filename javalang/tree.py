@@ -41,6 +41,11 @@ class Declaration(Node):
         else:
             return ""
 
+    @property
+    def annotations_str(self):
+        annotations = ['@'+i.name for i in self.annotations] #TODO: self.elements
+        return SEPERATOR.join(annotations)+SEPERATOR
+
 class TypeDeclaration(Declaration, Documented):
     attrs = ("name", "body")
 
@@ -82,7 +87,7 @@ class ClassDeclaration(TypeDeclaration):
         if implements:
             adding_imp = " implements " + ", ".join([t.to_java() for t in implements])
 
-        value = self.modifiers_str + "class " +name+adding_ext+adding_imp
+        value = self.annotations_str + self.modifiers_str + "class " +name+adding_ext+adding_imp
         value += SEPERATOR+"{"+SEPERATOR+SEPERATOR.join(body)+SEPERATOR+"}"
         return value
 
@@ -166,7 +171,7 @@ class MethodDeclaration(Member, Declaration):
         type_parameters = self.type_parameters
         throws = self.throws
 
-        value = modifiers_str+return_type_str+" "+name_str+"("+parameters_str+")"
+        value = self.annotations_str + modifiers_str+return_type_str+" "+name_str+"("+parameters_str+")"
 
         value += "{" +  SEPERATOR + SEPERATOR.join(body) + SEPERATOR+"}"
         return value
@@ -180,7 +185,7 @@ class FieldDeclaration(Member, Declaration):
 
         declarators = [i.to_java() for i in self.declarators]
 
-        value = modifiers_str+type_str+" "
+        value = self.annotations_str + modifiers_str+type_str+" "
         value += ", ".join(declarators)
         value += ";"
         
@@ -196,7 +201,7 @@ class ConstructorDeclaration(Declaration, Documented):
 
         body = [i.to_java() for i in self.body]
 
-        value = modifiers_str+name_str+'('+parameters_str+')'
+        value = self.annotations_str + modifiers_str+name_str+'('+parameters_str+')'
         value += " {" + SEPERATOR + SEPERATOR.join(body) + SEPERATOR+"}"
         return value
         
@@ -207,6 +212,13 @@ class ConstantDeclaration(FieldDeclaration):
 
 class ArrayInitializer(Node):
     attrs = ("initializers",)
+
+    def to_java(self):
+        initialzers = [i.to_java() for i in self.initializers]
+
+        value = "{" + ", ".join(initialzers) + "}"
+
+        return value
 
 class VariableDeclaration(Declaration):
     attrs = ("type", "declarators")
@@ -265,6 +277,13 @@ class ContinueStatement(Statement):
 
 class ReturnStatement(Statement):
     attrs = ("expression",)
+    
+    def to_java(self):
+        expression_str = self.expression.to_java()
+
+        ret = "return "+expression_str+";"
+
+        return ret
 
 class ThrowStatement(Statement):
     attrs = ("expression",)
@@ -285,7 +304,11 @@ class StatementExpression(Statement):
     attrs = ("expression",)
 
     def to_java(self):
-        return "STATEMENT"
+        label = self.label #TODO:?
+        expression_str = self.expression.to_java()
+        
+        ret = expression_str+";"
+        return ret
 
 # ------------------------------------------------------------------------------
 
@@ -316,6 +339,14 @@ class Expression(Node):
 
 class Assignment(Expression):
     attrs = ("expressionl", "value", "type")
+
+    def to_java(self):
+        expressionl_str = self.expressionl.to_java()
+        value_str = self.value.to_java()
+        type_str = self.type
+
+        ret = expressionl_str+' '+type_str+' '+value_str
+        return ret
 
 class TernaryExpression(Expression):
     attrs = ("condition", "if_true", "if_false")
@@ -356,6 +387,9 @@ class Literal(Primary):
 class This(Primary):
     attrs = ()
 
+    def to_java(self):
+        return "this"
+
 class MemberReference(Primary):
     attrs = ("member",)
 
@@ -364,7 +398,10 @@ class MemberReference(Primary):
         qualifier_str = self.qualifier
 
         #TODO:preflix, postflix,selector 
-        value = qualifier_str+'.'+member_str
+        if qualifier_str:
+            value = qualifier_str+'.'+member_str
+        else:
+            value = member_str 
         return value
 
 class Invocation(Primary):
@@ -375,6 +412,12 @@ class ExplicitConstructorInvocation(Invocation):
 
 class SuperConstructorInvocation(Invocation):
     attrs = ()
+
+    def to_java(self):
+        arguments = [i.to_java() for i in self.arguments]
+        value = "super("+ SEPERATOR.join(arguments) + ")"
+
+        return value
 
 class MethodInvocation(Invocation):
     attrs = ("member",)
@@ -406,6 +449,19 @@ class Creator(Primary):
 
 class ArrayCreator(Creator):
     attrs = ("dimensions", "initializer")
+
+    def to_java(self):
+        type_str = self.type.to_java()
+        type_and_dimension_str = get_name_and_dimensions_str_bare(type_str, self.dimensions)
+        if self.initializer:
+            initializer_str = self.initializer.to_java()
+        else:
+            initializer_str = ""
+
+        value = "new "+type_and_dimension_str+initializer_str
+
+        return value
+
 
 class ClassCreator(Creator):
     attrs = ("constructor_type_arguments", "arguments", "body")
@@ -439,11 +495,22 @@ class EnumConstantDeclaration(Declaration, Documented):
 class AnnotationMethod(Declaration):
     attrs = ("name", "return_type", "dimensions", "default")
 
+
+def get_name_and_dimensions_str_bare(name, dimensions):
+    ret = name
+    for i in dimensions:
+        if i:
+            ret += "["+i.to_java()+"]"
+        else:
+            ret += "[]"
+        
+    return ret
+
 #TODO: Modify dimension expansion
 def get_name_and_dimensions_str(node):
     if not node.dimensions:
         return node.name
-    return node.name+"[]"*len(node.dimensions)
+    return get_name_and_dimensions_str_bare(node.name, node.dimensions)
 
 def get_parameter_str(node):
     if node.parameters:

@@ -27,8 +27,7 @@ import org.eclipse.emf.ecore.provider.EcoreEditPlugin;
  * <!-- end-user-doc -->
  * @generated
  */
-public final class ModelRegistryEditorPlugin extends EMFPlugin
-{
+public final class ModelRegistryEditorPlugin extends EMFPlugin {
         // The plug-in ID
         public static final String PLUGIN_ID = ModelRegistryEnvironment.PLUGIN_ID + ".editor";
         /**
@@ -37,7 +36,8 @@ public final class ModelRegistryEditorPlugin extends EMFPlugin
          * <!-- end-user-doc -->
          * @generated
          */
-        public static final ModelRegistryEditorPlugin INSTANCE = new ModelRegistryEditorPlugin(2,3){}, IT2 = new ModelRegistryEditorPlugin(), IT3 = new int[2];
+        public static final ModelRegistryEditorPlugin INSTANCE = new ModelRegistryEditorPlugin(2, 3) {
+        }, IT2 = new ModelRegistryEditorPlugin(), IT3 = new int[2];
 
         /**
          * Keep track of the singleton.
@@ -54,10 +54,8 @@ public final class ModelRegistryEditorPlugin extends EMFPlugin
          * @generated
          */
         public ModelRegistryEditorPlugin() {
-                super
-                        (new ResourceLocator [] {
-                                EcoreEditPlugin.INSTANCE,
-                        });
+                super(new ResourceLocator[] { EcoreEditPlugin.INSTANCE, });
+
         }
 
         /**

@@ -180,5 +180,14 @@ if __name__ == "__main__":
 
     ast = javalang.parse.parse(program)
 
-    result = render_ast_innate(ast) 
-    print(result)
+    result1 = render_ast_innate(ast) 
+    print(result1)
+
+    ast1 = javalang.parse.parse(result1)
+    result2 = render_ast_innate(ast1)
+    ast2 = javalang.parse.parse(result2)
+
+    if result1 == result2: 
+        print("SUCCESS")
+    else:
+        print("FAIL")
