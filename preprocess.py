@@ -10,20 +10,130 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 print(javalang.__path__)
 
+
+
 def print_ast(ast):
     """ Print the ast in order to debug"""
+
+    # TODO
+    def get_type_str(para):
+        # print(para.type.children)
+        if hasattr(para, 'type'):
+            name = para.type.name;
+            dimensions = para.type.dimensions
+            name += "[]"*len(dimensions)
+            return name
+        else:
+            return ""
+
+    def get_modifiers_str(node):
+        if hasattr(node, "modifiers"):
+            modifiers = getattr(node, "modifiers") 
+            modifiers = " ".join(modifiers)
+            return modifiers
+        else:
+            return ""
+
+    # TODO: implement varargs
+    def get_parameter_str(node):
+        if hasattr(node, 'parameters'):
+            parameters = getattr(node, "parameters")
+        else:
+            return ""
+
+        paras = []
+        for para in parameters:
+            # print(para.type.children)
+            name_str = getattr(para, 'name')
+            type_str = get_type_str(para)
+            modifiers_str =  get_modifiers_str(para)
+            varargs = getattr(para, 'varargs')
+            paras.append(modifiers_str+' '+type_str+' '+name_str)
+
+        return ", ".join(paras)
+
+    def get_declarators_str(node):
+        if hasattr(node, 'declarators'):
+            d_list = []
+            for declarator in getattr(node, "declarators"):
+                name = declarator.name;
+                dimensions = declarator.dimensions;
+                name += "[]"*len(dimensions)
+
+                # TODO: deal with initializer
+                initializer = "new XX()"
+                d_list.append(name+' = '+initializer)
+
+            return ", ".join(d_list)
+        else:
+            return ""
+
     stack = [ast]
     while stack:
         node = stack.pop()
         #print(node)
-        if isinstance(node, list):
-            for i in node:
-                stack.append(i)
-        elif hasattr(node, 'children'):
-            for child in node.children:
-                stack.append(child)
-        else:
+        # TODO: add documentation expansion
+        # PackageDeclaration
+        if isinstance(node, javalang.tree.PackageDeclaration):
+            print('package', getattr(node, 'name')+';')
+            continue
+        # Import
+        # TODO: Add static and wildcard representation
+        if isinstance(node, javalang.tree.Import):
+            print('import', getattr(node, 'path')+';')
+            continue
+        # TODO: type_parameters
+        if isinstance(node, javalang.tree.ClassDeclaration):
+            name = getattr(node, 'name')
+            extends = getattr(node, 'extends')
+            implements = getattr(node, 'implements')
+            type_parameters = getattr(node, 'type_parameters')
+            body = getattr(node, 'body')
+            modifiers_str = get_modifiers_str(node)
+            adding_ext = ""
+            adding_imp = ""
+            if extends:
+                adding_ext = 'extends '+getattr(extends, 'name')
+            if implements:
+                adding_imp = 'implements '+", ".join(map(lambda d: getattr(d, 'name'), implements))
+            print(modifiers_str, 'class', name, adding_ext, adding_imp)
+            stack.extend(['}', body, '{'])
+            continue
+
+        if isinstance(node, javalang.tree.MethodDeclaration):
+            modifiers_str = get_modifiers_str(node)
+            return_type = getattr(node, "return_type")
+
+            # TODO: deal more with return type
+            return_type_str = return_type.name
+            name_str = getattr(node, 'name')
+            parameters_str = get_parameter_str(node) 
+            body = getattr(node, "body")
+
+            print(modifiers_str, return_type_str, name_str,'('+parameters_str+')')
+
+            stack.extend(['}', body, '{'])
+            continue
+
+        if isinstance(node, javalang.tree.FieldDeclaration):
+            modifiers_str = get_modifiers_str(node)
+            # TODO: Deal more with type
+            type_str = getattr(node, 'type').name
+            declarators_str_list = get_declarators_str(node)
+            modifiers_str = get_modifiers_str(node)
+
+            print(modifiers_str, type_str, declarators_str_list+';')
+
+
+        if isinstance(node, javalang.tree.FormalParameter):
+            modifiers_str = get_modifiers_str(node)
+
+        if isinstance(node, str):
             print(node)
+        if isinstance(node, list):
+            stack.extend(node[::-1])
+        elif hasattr(node, 'children'):
+            stack.extend(node.children[::-1])
 
 def check_file(line):
     """ Give a check on file, whether it can be parsed or not """
@@ -51,4 +161,11 @@ def preprocess(path):
             print('Line %d parsing good'%i)
 
 if __name__ == "__main__":
-    preprocess('./data/java_1M_train')
+    # preprocess('./data/java_1M_train')
+
+    with open('./test.java','r') as input_file:
+        program = input_file.read()
+
+    ast = javalang.parse.parse(program)
+
+    print_ast(ast)
