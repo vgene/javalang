@@ -4,6 +4,11 @@ from .ast import Node
 SEPERATOR = "\r\n"
 
 class CompilationUnit(Node):
+    """
+        package: Node - PackageDeclaration
+        imports: Node - Import
+        types:  List of Node
+    """
     attrs = ("package", "imports", "types")
     
     def to_java(self):
@@ -15,6 +20,11 @@ class CompilationUnit(Node):
         return value
 
 class Import(Node):
+    """
+        path: String of import path
+        static: Boolean of whether add static
+        wildcard: Boolean of whether add ".*"
+    """
     attrs = ("path", "static", "wildcard")
 
     def to_java(self):
@@ -28,9 +38,16 @@ class Import(Node):
         return value
 
 class Documented(Node):
+    """
+        documentation: String of documentation
+    """
     attrs = ("documentation",)
 
 class Declaration(Node):
+    """
+        modifers: List of String (of modifiers)
+        annotations: List of Node — AnnotationDeclaration
+    """
     attrs = ("modifiers", "annotations")
     
     # TODO: consider order or the modifiers
