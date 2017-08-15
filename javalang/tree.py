@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .ast import Node
 
 # ------------------------------------------------------------------------------
@@ -46,7 +47,7 @@ class Documented(Node):
 class Declaration(Node):
     """
         modifers: List of String (of modifiers)
-        annotations: List of Node — AnnotationDeclaration
+        annotations: List of Node - AnnotationDeclaration
     """
     attrs = ("modifiers", "annotations")
     
@@ -60,10 +61,18 @@ class Declaration(Node):
 
     @property
     def annotations_str(self):
-        annotations = ['@'+i.name for i in self.annotations] #TODO: self.elements
-        return SEPERATOR.join(annotations)+SEPERATOR
+        if self.annotations:
+            annotations = [i.to_java() for i in self.annotations]
+            value = SEPERATOR.join(annotations)+SEPERATOR     
+        else:
+            value = ""
+        return value
 
 class TypeDeclaration(Declaration, Documented):
+    """
+        name: String of type name
+        body: List of Node
+    """
     attrs = ("name", "body")
 
     @property
@@ -79,6 +88,9 @@ class TypeDeclaration(Declaration, Documented):
         return [decl for decl in self.body if isinstance(decl, ConstructorDeclaration)]
 
 class PackageDeclaration(Declaration, Documented):
+    """
+        name: String of the package name
+    """
     attrs = ("name",)
 
     def to_java(self):
@@ -87,6 +99,11 @@ class PackageDeclaration(Declaration, Documented):
         return value
 
 class ClassDeclaration(TypeDeclaration):
+    """
+        type_parameters:
+        extends: None or Type(ReferenceType)
+        implements: None or List of Type(ReferenceType) 
+    """
     attrs = ("type_parameters", "extends", "implements")
 
     def to_java(self):
@@ -120,6 +137,10 @@ class AnnotationDeclaration(TypeDeclaration):
 # ------------------------------------------------------------------------------
 
 class Type(Node):
+    """
+        name: String of name
+        dimensions: List of None or Node(Liberals or else)
+    """
     attrs = ("name", "dimensions",)
 
     @property
@@ -130,12 +151,19 @@ class Type(Node):
         return self.name_and_dimensions_str
 
 class BasicType(Type):
+    """
+        simple implementation of type
+    """
     attrs = ()
 
     def to_java(self):
         return self.name_and_dimensions_str
 
 class ReferenceType(Type):
+    """
+        arguments: ?
+        sub_type: ?
+    """
     attrs = ("arguments", "sub_type")
 
     def to_java(self):
@@ -156,7 +184,15 @@ class TypeParameter(Node):
 # ------------------------------------------------------------------------------
 
 class Annotation(Node):
+    """
+        name: String of name
+        element: None or ?
+    """
     attrs = ("name", "element")
+    #TODO: element
+    def to_java(self):
+        value = '@'+self.name
+        return value
 
 class ElementValuePair(Node):
     attrs = ("name", "value")
@@ -170,6 +206,14 @@ class Member(Documented):
     attrs = ()
 
 class MethodDeclaration(Member, Declaration):
+    """
+        type_parameters:?
+        return_type: Node - Type(ReferenceType)
+        name: String of name
+        parameters: List of parameters(FormalParameter)
+        throws:?
+        body: List of Nodes
+    """
     attrs = ("type_parameters", "return_type", "name", "parameters", "throws", "body")
 
     @property
@@ -194,6 +238,10 @@ class MethodDeclaration(Member, Declaration):
         return value
 
 class FieldDeclaration(Member, Declaration):
+    """
+        type: Node - Type(ReferenceType)
+        declarators: List of Declarators
+    """
     attrs = ("type", "declarators")
 
     def to_java(self):
@@ -225,9 +273,16 @@ class ConstructorDeclaration(Declaration, Documented):
 # ------------------------------------------------------------------------------
 
 class ConstantDeclaration(FieldDeclaration):
+    """
+        only in interface
+    """
     attrs = ()
 
 class ArrayInitializer(Node):
+    """
+        different from ArrayCreator
+        initializer: List of Node(Literals for example)
+    """
     attrs = ("initializers",)
 
     def to_java(self):
@@ -239,11 +294,29 @@ class ArrayInitializer(Node):
 
 class VariableDeclaration(Declaration):
     attrs = ("type", "declarators")
+    
+    def to_java(self):
+        type_str = self.type.to_java()
+        declarators = [i.to_java() for i in self.declarators]
+        motifiers_str = self.modifiers_str
+        annoations_str = self.annotations_str
+
+        value = annoations_str + motifiers_str + type_str + " " + ", ".join(declarators)+";"
+
+        return value
 
 class LocalVariableDeclaration(VariableDeclaration):
     attrs = ()
 
+    #def to_java(self):
+
+
 class VariableDeclarator(Node):
+    """
+        name: String of name
+        dimensions: List of (None or Node)
+        initializer: 
+    """
     attrs = ("name", "dimensions", "initializer")
 
     def to_java(self):
@@ -271,36 +344,119 @@ class InferredFormalParameter(Node):
 class Statement(Node):
     attrs = ("label",)
 
+    @property
+    def label_str(self):
+        if self.label:
+            return self.label+": "
+        else:
+            return ""
+
 class IfStatement(Statement):
+    """
+        condition: Node (BinaryOperation for example)
+        then_statement: Node - BlockStatement or StatementExpression
+        if_statement: Node - BlockStatement or StatementExpression 
+    """
     attrs = ("condition", "then_statement", "else_statement")
+    
+    def to_java(self):
+        condition_str = self.condition.to_java()
+        then_statement_str = self.then_statement.to_java()
+        else_statement_str = self.else_statement.to_java()
+
+        value = self.label_str+"if("+condition_str+ ") "+SEPERATOR+then_statement_str+SEPERATOR+"else "+SEPERATOR+else_statement_str
+
+        return value
+
 
 class WhileStatement(Statement):
+    """
+        condition: Node (BinaryOperation for example)
+        body: Node - BlockStatement or StatementExpression 
+    """
     attrs = ("condition", "body")
+
+    def to_java(self):
+        condition_str = self.condition.to_java()
+        body_str = self.body.to_java()
+
+        value = self.label_str + "while ("+condition_str+") "+SEPERATOR+body_str
+        return value
 
 class DoStatement(Statement):
+    """
+        condition: Node (BinaryOperation for example)
+        body: Node - BlockStatement or StatementExpression 
+    """
     attrs = ("condition", "body")
 
+    def to_java(self):
+        condition_str = self.condition.to_java()
+        body_str = self.body.to_java()
+        value = self.label_str +"do"+SEPERATOR+body_str+  "while ("+condition_str+");"
+
+        return value
+
 class ForStatement(Statement):
+    """
+        control: Node - ForControl
+        body: Node - BlockStatement or StatementExpression 
+    """
     attrs = ("control", "body")
+
+    def to_java(self):
+        control_str = self.control.to_java()
+        body_str = self.body.to_java()
+
+        value = self.label_str+ "for ("+control_str+")"+SEPERATOR+body_str
+
+        return value
 
 class AssertStatement(Statement):
     attrs = ("condition", "value")
 
 class BreakStatement(Statement):
+    """
+        goto: String - label of goto destination
+    """
     attrs = ("goto",)
+
+    def to_java(self):
+        if self.goto:
+            goto_str = ": "+self.goto
+        else:
+            goto_str = ""
+
+        value = self.label_str + "break"+goto_str+";"
+        return value
+        
 
 class ContinueStatement(Statement):
+    """
+        goto: String - label of goto destination
+    """
     attrs = ("goto",)
 
+    def to_java(self):
+        if self.goto:
+            goto_str = ": "+self.goto
+        else:
+            goto_str = ""
+
+        value = self.label_str + "continue"+goto_str+";"
+        return value
+
 class ReturnStatement(Statement):
+    """
+        expression: Node - expression
+    """
     attrs = ("expression",)
     
     def to_java(self):
         expression_str = self.expression.to_java()
+        value = self.label_str+"return "+expression_str+";"
 
-        ret = "return "+expression_str+";"
-
-        return ret
+        return value
 
 class ThrowStatement(Statement):
     attrs = ("expression",)
@@ -315,13 +471,27 @@ class SwitchStatement(Statement):
     attrs = ("expression", "cases")
 
 class BlockStatement(Statement):
+    """
+        need to surround by {}
+        statements: List of statements
+    """
     attrs = ("statements",)
 
+    def to_java(self):
+        statements = [i.to_java() for i in self.statements]
+
+        value = self.label_str+"{"+SEPERATOR+ SEPERATOR.join(statements)+SEPERATOR+"}"
+
+        return value
+
 class StatementExpression(Statement):
+    """
+        Complete statement need to add a ';'
+        expression: Node - expression 
+    """
     attrs = ("expression",)
 
     def to_java(self):
-        label = self.label #TODO:?
         expression_str = self.expression.to_java()
         
         ret = expression_str+";"
@@ -344,7 +514,23 @@ class SwitchStatementCase(Node):
     attrs = ("case", "statements")
 
 class ForControl(Node):
+    """
+        init: List of Node(assignments) / Node LocalVariableDeclaration
+        condition: Node
+        update: List of Node(assignment)
+    """
     attrs = ("init", "condition", "update")
+
+    def to_java(self):
+        if isinstance(self.init, list):
+            inits_str = ", ".join([i.to_java() for i in self.init])+";"
+        else:
+            inits_str = self.init.to_java()
+        condition_str = self.condition.to_java()
+        updates = [i.to_java() for i in self.update]
+
+        value = inits_str +condition_str+";"+",".join(updates)
+        return value
 
 class EnhancedForControl(Node):
     attrs = ("var", "iterable")
@@ -355,6 +541,11 @@ class Expression(Node):
     attrs = ()
 
 class Assignment(Expression):
+    """
+        expressionl:
+        value:
+        type:
+    """
     attrs = ("expressionl", "value", "type")
 
     def to_java(self):
@@ -393,7 +584,18 @@ class LambdaExpression(Expression):
 class Primary(Expression):
     attrs = ("prefix_operators", "postfix_operators", "qualifier", "selectors")
 
+    @property
+    def prefix_operators_str(self):
+        return "".join(self.prefix_operators)
+
+    @property
+    def postfix_operators_str(self):
+        return "".join(self.postfix_operators)
+
 class Literal(Primary):
+    """
+        value: String of literal
+    """
     attrs = ("value",)
 
     def to_java(self):
@@ -414,11 +616,14 @@ class MemberReference(Primary):
         member_str = self.member
         qualifier_str = self.qualifier
 
-        #TODO:preflix, postflix,selector 
+        #TODO:selector 
         if qualifier_str:
             value = qualifier_str+'.'+member_str
         else:
             value = member_str 
+        
+        
+        value = self.prefix_operators_str+value+self.postfix_operators_str
         return value
 
 class Invocation(Primary):
@@ -457,6 +662,10 @@ class VoidClassReference(ClassReference):
 # ------------------------------------------------------------------------------
 
 class Creator(Primary):
+    """
+        create an object of a specific type
+        type: Node - Type(ReferenceType)
+    """
     attrs = ("type",)
 
     def to_java(self):
@@ -465,6 +674,10 @@ class Creator(Primary):
         return value
 
 class ArrayCreator(Creator):
+    """
+        dimensions: List of None or Node
+        initializer: Node - ArrayInitializer
+    """
     attrs = ("dimensions", "initializer")
 
     def to_java(self):
@@ -481,6 +694,11 @@ class ArrayCreator(Creator):
 
 
 class ClassCreator(Creator):
+    """
+        constructor_type_arguments: ? 
+        arguments: List of Node (Literals for example)
+        body: List of Node
+    """
     attrs = ("constructor_type_arguments", "arguments", "body")
 
     def to_java(self):

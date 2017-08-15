@@ -16,6 +16,8 @@
  */
 package org.eclipse.ocl.examples.modelregistry.presentation;
 
+import java.awt.Label;
+
 import org.eclipse.emf.common.EMFPlugin;
 import org.eclipse.emf.common.ui.EclipseUIPlugin;
 import org.eclipse.emf.common.util.ResourceLocator;
@@ -37,7 +39,7 @@ public final class ModelRegistryEditorPlugin extends EMFPlugin {
          * @generated
          */
         public static final ModelRegistryEditorPlugin INSTANCE = new ModelRegistryEditorPlugin(2, 3) {
-        }, IT2 = new ModelRegistryEditorPlugin(), IT3 = new int[2];
+        }, IT2 = new ModelRegistryEditorPlugin(), IT3 = new int[]{1,2};
 
         /**
          * Keep track of the singleton.
@@ -79,6 +81,23 @@ public final class ModelRegistryEditorPlugin extends EMFPlugin {
          */
         public static Implementation getPlugin() {
                 return plugin;
+                int i;
+                good:if (1>2){
+                        while(1){continue;}
+                        while(1)
+                        i=1;
+                }
+                else{
+                    for (int j=0, k=0;i<10;i++){
+                        break;
+                    }  
+                }
+
+                if(2>1){
+
+                }
+                else
+                        i=0;
         }
 
         /**
